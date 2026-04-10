@@ -7,7 +7,7 @@ import schemas
 from database import engine, SessionLocal
 
 # -----------------------------
-# 🚀 CREATE TABLES
+# 🚀 CREATE TABLES (AUTO)
 # -----------------------------
 models.Base.metadata.create_all(bind=engine)
 
@@ -16,16 +16,16 @@ models.Base.metadata.create_all(bind=engine)
 # -----------------------------
 app = FastAPI(
     title="User Management API",
-    description="FastAPI + PostgreSQL + Render Deployment",
+    description="FastAPI + PostgreSQL (Render)",
     version="1.0"
 )
 
 # -----------------------------
-# 🌐 CORS (IMPORTANT for Streamlit)
+# 🌐 CORS (for Streamlit)
 # -----------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # change to Streamlit URL in production
+    allow_origins=["*"],  # Restrict later for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -56,15 +56,22 @@ def health():
     return {"status": "running"}
 
 # -----------------------------
+# 🧪 TEST ENDPOINT (DEBUG)
+# -----------------------------
+@app.get("/test")
+def test():
+    return {"message": "API working successfully ✅"}
+
+# -----------------------------
 # ➕ CREATE USER
 # -----------------------------
 @app.post("/users", response_model=schemas.UserResponse)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
     # Check duplicate email
-    existing = db.query(models.User).filter(models.User.email == user.email).first()
+    existing_user = db.query(models.User).filter(models.User.email == user.email).first()
 
-    if existing:
+    if existing_user:
         raise HTTPException(status_code=400, detail="Email already exists")
 
     new_user = models.User(**user.dict())
@@ -80,8 +87,7 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 # -----------------------------
 @app.get("/users", response_model=list[schemas.UserResponse])
 def get_users(db: Session = Depends(get_db)):
-    users = db.query(models.User).all()
-    return users
+    return db.query(models.User).all()
 
 # -----------------------------
 # 🔍 GET USER BY ID
@@ -100,7 +106,7 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
 # 🔎 VALIDATE EMAIL
 # -----------------------------
 @app.get("/validate/{email}")
-def validate_user(email: str, db: Session = Depends(get_db)):
+def validate_email(email: str, db: Session = Depends(get_db)):
 
     user = db.query(models.User).filter(models.User.email == email).first()
 
@@ -110,23 +116,7 @@ def validate_user(email: str, db: Session = Depends(get_db)):
     }
 
 # -----------------------------
-# ❌ DELETE USER (OPTIONAL)
-# -----------------------------
-@app.delete("/users/{user_id}")
-def delete_user(user_id: int, db: Session = Depends(get_db)):
-
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    db.delete(user)
-    db.commit()
-
-    return {"message": "User deleted successfully"}
-
-# -----------------------------
-# ✏️ UPDATE USER (OPTIONAL)
+# ✏️ UPDATE USER
 # -----------------------------
 @app.put("/users/{user_id}", response_model=schemas.UserResponse)
 def update_user(user_id: int, updated_user: schemas.UserCreate, db: Session = Depends(get_db)):
@@ -144,3 +134,19 @@ def update_user(user_id: int, updated_user: schemas.UserCreate, db: Session = De
     db.refresh(user)
 
     return user
+
+# -----------------------------
+# ❌ DELETE USER
+# -----------------------------
+@app.delete("/users/{user_id}")
+def delete_user(user_id: int, db: Session = Depends(get_db)):
+
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    db.delete(user)
+    db.commit()
+
+    return {"message": "User deleted successfully"}
