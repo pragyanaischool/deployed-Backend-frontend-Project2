@@ -1,1 +1,1 @@
-API_URL = "https://backend-project-1-tquz.onrender.com"
+API_URL = "https://deployed-backend-frontend-project2.onrender.com"
