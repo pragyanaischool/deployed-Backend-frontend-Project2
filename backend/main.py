@@ -7,9 +7,18 @@ import schemas
 from database import engine, SessionLocal
 
 # -----------------------------
-# 🚀 CREATE TABLES (AUTO)
+# 🧪 DEBUG PRINTS (STARTUP)
 # -----------------------------
-models.Base.metadata.create_all(bind=engine)
+print("🚀 Starting FastAPI App...")
+
+# -----------------------------
+# 🧠 DB CONNECTION TEST (SAFE)
+# -----------------------------
+try:
+    models.Base.metadata.create_all(bind=engine)
+    print("✅ DB Connected and Tables Created")
+except Exception as e:
+    print("❌ DB Error:", str(e))
 
 # -----------------------------
 # 🚀 INIT APP
